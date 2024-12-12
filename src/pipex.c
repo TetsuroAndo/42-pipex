@@ -6,183 +6,196 @@
 /*   By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/11 20:53:41 by teando            #+#    #+#             */
-/*   Updated: 2024/12/11 20:57:43 by teando           ###   ########.fr       */
+/*   Updated: 2024/12/13 08:49:33 by teando           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/pipex.h"
+#include "pipex.h"
 
-static char	*get_path_line(char **envp)
+static void	wait_children(void)
 {
-	int	i;
+	int	status;
 
-	i = 0;
-	while (envp[i])
-	{
-		if (strncmp(envp[i], "PATH=", 5) == 0)
-			return (envp[i] + 5);
-		i++;
-	}
-	return (NULL);
-}
-
-static void	exec_child1(t_pipex *px, char *cmd, int fd[2])
-{
-	char	**cmd_args;
-	char	*cmd_path;
-
-	close(fd[0]);
-	if (dup2(px->infile_fd, STDIN_FILENO) < 0)
-		error_exit("dup2 error");
-	if (dup2(fd[1], STDOUT_FILENO) < 0)
-		error_exit("dup2 error");
-	close(fd[1]);
-	cmd_args = ft_split(cmd, ' ');
-	if (!cmd_args)
-		error_exit("split error");
-	cmd_path = find_command_path(cmd_args[0], px->paths);
-	if (!cmd_path)
-	{
-		perror(cmd_args[0]);
-		free_split(cmd_args);
-		exit(127);
-	}
-	execve(cmd_path, cmd_args, px->envp);
-	perror("execve");
-	free_split(cmd_args);
-	free(cmd_path);
-	exit(127);
-}
-
-static void	exec_child2(t_pipex *px, char *cmd, int fd[2])
-{
-	char	**cmd_args;
-	char	*cmd_path;
-
-	close(fd[1]);
-	if (dup2(fd[0], STDIN_FILENO) < 0)
-		error_exit("dup2 error");
-	if (dup2(px->outfile_fd, STDOUT_FILENO) < 0)
-		error_exit("dup2 error");
-	close(fd[0]);
-	cmd_args = ft_split(cmd, ' ');
-	if (!cmd_args)
-		error_exit("split error");
-	cmd_path = find_command_path(cmd_args[0], px->paths);
-	if (!cmd_path)
-	{
-		perror(cmd_args[0]);
-		free_split(cmd_args);
-		exit(127);
-	}
-	execve(cmd_path, cmd_args, px->envp);
-	perror("execve");
-	free_split(cmd_args);
-	free(cmd_path);
-	exit(127);
+	status = 0;
+	while (wait(&status) > 0)
+		;
 }
 
 int	main(int argc, char **argv, char **envp)
 {
-	t_pipex	px;
 	int		fd[2];
 	pid_t	pid1;
 	pid_t	pid2;
-	int		status;
-	char	*path_line;
+	int		infile;
+	int		outfile;
 
 	if (argc != 5)
-	{
-		fprintf(stderr, "Usage: %s file1 cmd1 cmd2 file2\n", argv[0]);
-		return (1);
-	}
-	px.infile_fd = open(argv[1], O_RDONLY);
-	if (px.infile_fd < 0)
-	{
-		perror(argv[1]);
-		return (1);
-	}
-	px.outfile_fd = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (px.outfile_fd < 0)
-	{
-		perror(argv[4]);
-		close(px.infile_fd);
-		return (1);
-	}
-	px.envp = envp;
-	path_line = get_path_line(envp);
-	if (path_line == NULL)
-		px.paths = NULL;
-	else
-		px.paths = ft_split(path_line, ':');
+		exit_with_error("Invalid number of arguments.\n", 1);
+	infile = open(argv[1], O_RDONLY);
+	if (infile < 0)
+		exit_with_error("Input file error", 1);
+	outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (outfile < 0)
+		exit_with_error("Output file error", 1);
 	if (pipe(fd) == -1)
-		error_exit("pipe error");
+		exit_with_error("Pipe error", 1);
 	pid1 = fork();
 	if (pid1 < 0)
-		error_exit("fork error");
+		exit_with_error("Fork error", 1);
 	if (pid1 == 0)
-		exec_child1(&px, argv[2], fd);
+		child_proc_first(fd, argv, envp, infile);
 	pid2 = fork();
 	if (pid2 < 0)
-		error_exit("fork error");
+		exit_with_error("Fork error", 1);
 	if (pid2 == 0)
-		exec_child2(&px, argv[3], fd);
-	close(fd[0]);
-	close(fd[1]);
-	waitpid(pid1, &status, 0);
-	waitpid(pid2, &status, 0);
-	close(px.infile_fd);
-	close(px.outfile_fd);
-	if (px.paths)
-		free_split(px.paths);
-	return (WEXITSTATUS(status));
+		child_proc_second(fd, argv, envp, outfile);
+	close_pipes(fd);
+	close(infile);
+	close(outfile);
+	wait_children();
+	return (0);
 }
 
-char	*find_command_path(char *cmd, char **env_paths)
+void	ft_free_split(char **split)
 {
-	char	*full_path;
-	int		i;
+	size_t	i;
 
-	if (strchr(cmd, '/')) // すでにパスが含まれる場合
-	{
-		if (access(cmd, X_OK) == 0)
-			return (strdup(cmd));
-		return (NULL);
-	}
-	if (!env_paths)
-		return (NULL);
+	if (!split)
+		return ;
 	i = 0;
-	while (env_paths[i])
+	while (split[i])
+		free(split[i++]);
+	free(split);
+}
+
+/* utils */
+
+void	exit_with_error(char *msg, int code)
+{
+	perror(msg);
+	exit(code);
+}
+
+void	close_pipes(int fd[2])
+{
+	close(fd[0]);
+	close(fd[1]);
+}
+
+void	execute_cmd(char *cmd, char **envp)
+{
+	char	**args;
+	char	*path;
+
+	args = ft_split(cmd, ' ');
+	if (!args || !args[0])
 	{
-		full_path = malloc(strlen(env_paths[i]) + 1 + strlen(cmd) + 1);
-		if (!full_path)
+		if (args)
+			ft_free_split(args);
+		exit_with_error("Command parse error", 127);
+	}
+	path = get_cmd_path(args[0], envp);
+	if (!path)
+	{
+		ft_free_split(args);
+		exit_with_error("Command not found", 127);
+	}
+	if (execve(path, args, envp) == -1)
+	{
+		free(path);
+		ft_free_split(args);
+		exit_with_error("Execve error", 127);
+	}
+}
+
+void	child_proc_first(int fd[2], char **argv, char **envp, int infile)
+{
+	if (dup2(infile, STDIN_FILENO) < 0)
+		exit_with_error("Dup error", 1);
+	if (dup2(fd[1], STDOUT_FILENO) < 0)
+		exit_with_error("Dup error", 1);
+	close_pipes(fd);
+	close(infile);
+	execute_cmd(argv[2], envp);
+}
+
+void	child_proc_second(int fd[2], char **argv, char **envp, int outfile)
+{
+	if (dup2(fd[0], STDIN_FILENO) < 0)
+		exit_with_error("Dup error", 1);
+	if (dup2(outfile, STDOUT_FILENO) < 0)
+		exit_with_error("Dup error", 1);
+	close_pipes(fd);
+	close(outfile);
+	execute_cmd(argv[3], envp);
+}
+
+/* path */
+static char	*join_path(const char *p, const char *cmd)
+{
+	char	*tmp;
+	char	*joined;
+
+	tmp = ft_strjoin(p, "/");
+	if (!tmp)
+		return (NULL);
+	joined = ft_strjoin(tmp, cmd);
+	free(tmp);
+	return (joined);
+}
+
+static char	*check_path(char **paths, char *cmd)
+{
+	int		i;
+	char	*fullpath;
+	int		ret;
+
+	i = 0;
+	fullpath = NULL;
+	while (paths && paths[i])
+	{
+		fullpath = join_path(paths[i], cmd);
+		if (!fullpath)
 			return (NULL);
-		strcpy(full_path, env_paths[i]);
-		strcat(full_path, "/");
-		strcat(full_path, cmd);
-		if (access(full_path, X_OK) == 0)
-			return (full_path);
-		free(full_path);
+		ret = access(fullpath, X_OK);
+		if (ret == 0)
+			return (fullpath);
+		free(fullpath);
 		i++;
 	}
 	return (NULL);
 }
 
-void	error_exit(const char *msg)
+char	*get_cmd_path(char *cmd, char **envp)
 {
-	perror(msg);
-	exit(EXIT_FAILURE);
-}
+	int		i;
+	char	**paths;
+	char	*path_env;
+	char	*res;
 
-void	free_split(char **arr)
-{
-	int i = 0;
-	if (!arr)
-		return ;
-	while (arr[i])
+	i = 0;
+	if (!cmd)
+		return (NULL);
+	if (ft_strchr(cmd, '/'))
 	{
-		free(arr[i]);
+		if (access(cmd, X_OK) == 0)
+			return (ft_strdup(cmd));
+		return (NULL);
+	}
+	path_env = NULL;
+	while (envp && envp[i])
+	{
+		if (ft_strncmp(envp[i], "PATH=", 5) == 0)
+		{
+			path_env = envp[i] + 5;
+			break ;
+		}
 		i++;
 	}
-	free(arr);
+	if (!path_env)
+		return (NULL);
+	paths = ft_split(path_env, ':');
+	res = check_path(paths, cmd);
+	ft_free_split(paths);
+	return (res);
 }

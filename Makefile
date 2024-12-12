@@ -6,30 +6,67 @@
 #    By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/11 20:51:11 by teando            #+#    #+#              #
-#    Updated: 2024/12/11 20:57:30 by teando           ###   ########.fr        #
+#    Updated: 2024/12/13 08:42:41 by teando           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME = pipex
-CC = cc
-CFLAGS = -Wall -Wextra -Werror
-SRCS = src/pipex.c
-OBJS = $(SRCS:.c=.o)
+NAME		:= pipex
+CC			:= cc
+CFLAGS		:= -Wall -Wextra -Werror
+ROOT_DIR	:= .
+OUT_DIR		:= $(ROOT_DIR)/obj
+INCS_DIR	:= $(ROOT_DIR)/inc
+LIBFT_DIR	:= $(ROOT_DIR)/libft
+LIBFT		:= $(LIBFT_DIR)/libft.a
+IDFLAGS		:= -I$(INCS_DIR) -I$(LIBFT_DIR)
 
-LIBFT = ./libft/libft.a
+SRCS 		:= \
+	$(addprefix src/, \
+		pipex.c \
+	)
+OBJS		:= $(addprefix $(OUT_DIR)/, $(SRCS:.c=.o))
+DEPS		:= $(OBJS:.o=.d)
+
+ifeq ($(DEBUG), 1)
+	CFLAGS	+= -g -fsanitize=address
+else
+	CFLAGS	+= -O2
+endif
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJS) -I./inc/pipex.h
+$(NAME): $(LIBFT) $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) -o $@
 
-%.o: %.c ./inc/pipex.h
-	$(CC) $(CFLAGS) -c $< -o $@
+$(LIBFT):
+	$(MAKE) -C $(LIBFT_DIR)
+
+$(OUT_DIR)/%.o: $(ROOT_DIR)/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -MMD -MP $(IDFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS)
+	$(MAKE) -C $(LIBFT_DIR) clean
+	rm -rf $(OUT_DIR)
 
 fclean: clean
+	$(MAKE) -C $(LIBFT_DIR) fclean
 	rm -f $(NAME)
 
 re: fclean all
+	
+sub:
+	git submodule update --init --recursive
+
+subup:
+	git submodule update --remote
+
+norm:
+	@norminette $(SRCS) $(INCS_DIR)
+
+debug:
+	$(MAKE) DEBUG=1
+
+.PHONY: all clean fclean re sub subup norm debug
+
+-include $(DEPS)%
