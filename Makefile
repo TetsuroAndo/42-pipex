@@ -5,8 +5,8 @@
 #                                                     +:+ +:+         +:+      #
 #    By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/12/11 20:51:11 by teando            #+#    #+#              #
-#    Updated: 2024/12/13 09:29:23 by teando           ###   ########.fr        #
+#    Created: 2024/12/13 11:03:17 by teando            #+#    #+#              #
+#    Updated: 2024/12/13 11:03:25 by teando           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -28,6 +28,7 @@ SRCS 		:= \
 		pipex.c \
 		utils.c \
 	)
+
 OBJS		:= $(addprefix $(OUT_DIR)/, $(SRCS:.c=.o))
 DEPS		:= $(OBJS:.o=.d)
 
@@ -58,7 +59,7 @@ fclean: clean
 	rm -f $(NAME)
 
 re: fclean all
-	
+
 sub:
 	git submodule update --init --recursive
 
@@ -73,4 +74,4 @@ debug:
 
 .PHONY: all clean fclean re sub subup norm debug
 
--include $(DEPS)%
+-include $(DEPS)

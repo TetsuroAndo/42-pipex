@@ -6,7 +6,7 @@
 /*   By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/11 20:53:41 by teando            #+#    #+#             */
-/*   Updated: 2024/12/13 11:06:40 by teando           ###   ########.fr       */
+/*   Updated: 2024/12/13 11:19:02 by teando           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,34 +65,29 @@ void	execute_pipeline(char **cmds, int cmd_count, int in_fd, int out_fd,
 	fork_command(cmds[i], envp, prev_fd, out_fd);
 }
 
-static void	parse_args(int argc, char **argv, t_pipex *px)
-{
-	if (argc < 5)
-		error_exit("Invalid number of arguments.\n", 1);
-	px->heredoc = is_here_doc(argv[1]);
-	if (px->heredoc)
-	{
-		if (argc < 6)
-			error_exit("Invalid number of arguments for here_doc.\n", 1);
-		px->infile = handle_here_doc(argv[2]);
-		px->outfile = open_output_file_append(argv[argc - 1]);
-		px->cmds = &argv[3];
-		px->cmd_count = argc - 4;
-	}
-	else
-	{
-		px->infile = open_input_file(argv[1]);
-		px->outfile = open_output_file(argv[argc - 1]);
-		px->cmds = &argv[2];
-		px->cmd_count = argc - 3;
-	}
-}
-
-int	main(int argc, char **argv, char **envp)
+int	main(int ac, char **av, char **envp)
 {
 	t_pipex	px;
 
-	parse_args(argc, argv, &px);
+	if (ac < 5)
+		error_exit("Invalid number of arguments.\n", 1);
+	px.heredoc = is_here_doc(av[1]);
+	if (px.heredoc)
+	{
+		if (ac < 6)
+			error_exit("Invalid number of arguments for here_doc.\n", 1);
+		px.infile = handle_here_doc(av[2]);
+		px.outfile = open_output_file_append(av[ac - 1]);
+		px.cmds = &av[3];
+		px.cmd_count = ac - 4;
+	}
+	else
+	{
+		px.infile = open_input_file(av[1]);
+		px.outfile = open_output_file(av[ac - 1]);
+		px.cmds = &av[2];
+		px.cmd_count = ac - 3;
+	}
 	execute_pipeline(px.cmds, px.cmd_count, px.infile, px.outfile, envp);
 	wait_children();
 	return (0);

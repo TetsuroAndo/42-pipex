@@ -6,7 +6,7 @@
 /*   By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/11 20:51:04 by teando            #+#    #+#             */
-/*   Updated: 2024/12/13 09:25:11 by teando           ###   ########.fr       */
+/*   Updated: 2024/12/13 11:03:34 by teando           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,24 +26,35 @@
 # define READ_END 0
 # define WRITE_END 1
 
-int		main(int argc, char **argv, char **envp);
+typedef struct s_pipex
+{
+	int		infile;
+	int		outfile;
+	char	**cmds;
+	int		cmd_count;
+	int		heredoc;
+}			t_pipex;
 
-/* pipex_utils.c */
-void	error_exit(char *msg, int code);
-void	close_pipes(int *fd);
-void	ft_free_split(char **split);
+/* utils.c */
+void		error_exit(char *msg, int code);
+void		ft_free_split(char **split);
 
 /* execute.c */
-void	execute_cmd(char *cmd, char **envp);
+void		execute_cmd(char *cmd, char **envp);
 
-/* path_utils.c */
-char	*get_cmd_path(char *cmd, char **envp);
+/* path.c */
+char		*get_cmd_path(char *cmd, char **envp);
 
 /* file_ctl.c */
-int		open_input_file(char *filename);
-int		open_output_file(char *filename);
-int		open_output_file_append(char *filename);
-int		is_here_doc(char *arg);
-int		handle_here_doc(char *limiter);
+int			open_input_file(char *filename);
+int			open_output_file(char *filename);
+int			open_output_file_append(char *filename);
+int			is_here_doc(char *arg);
+int			handle_here_doc(char *limiter);
+
+/* pipex.c */
+void		execute_pipeline(char **cmds, int cmd_count, int in_fd, int out_fd,
+				char **envp);
+void		wait_children(void);
 
 #endif
