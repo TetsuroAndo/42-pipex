@@ -6,7 +6,7 @@
 #    By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/13 11:03:17 by teando            #+#    #+#              #
-#    Updated: 2024/12/13 11:03:25 by teando           ###   ########.fr        #
+#    Updated: 2024/12/13 19:15:44 by teando           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,6 +24,7 @@ SRCS 		:= \
 	$(addprefix src/, \
 		execute.c \
 		file_ctl.c \
+		file_open.c \
 		path.c \
 		pipex.c \
 		utils.c \
