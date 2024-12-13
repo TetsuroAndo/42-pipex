@@ -12,6 +12,11 @@
 
 #include "pipex.h"
 
+/*
+ * 引数が"here_doc"かどうかを判定する
+ * @param arg 判定する文字列
+ * @return here_docの場合は1、それ以外は0
+ */
 int	is_here_doc(char *arg)
 {
 	if (!arg)
@@ -21,6 +26,12 @@ int	is_here_doc(char *arg)
 	return (0);
 }
 
+/*
+ * heredocの入力を処理し、指定されたファイルディスクリプタに書き込む
+ * リミッター文字列が入力されるまで標準入力から読み込みを続ける
+ * @param write_fd 書き込み先のファイルディスクリプタ
+ * @param limiter 終了を示すリミッター文字列
+ */
 static void	write_heredoc_lines(int write_fd, char *limiter)
 {
 	char	*line;
@@ -40,6 +51,13 @@ static void	write_heredoc_lines(int write_fd, char *limiter)
 	}
 }
 
+/*
+ * heredocモードの入力処理を実行する
+ * 子プロセスでheredocの入力を受け付け、パイプを通じて親プロセスに渡す
+ * @param limiter heredocの終了を示すリミッター文字列
+ * @return パイプの読み込み側のファイルディスクリプタ
+ * エラー時は適切なエラーメッセージを表示して終了
+ */
 int	handle_here_doc(char *limiter)
 {
 	int		pipe_fd[2];

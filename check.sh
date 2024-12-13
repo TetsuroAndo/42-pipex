@@ -100,7 +100,12 @@ else
     echo "-------------------------------------"
     echo "TEST: here_doc simple test"
     echo "=> NG"
+    echo "outfile:"
+    cat outfile
+    echo "outfile_expected:"
+    cat outfile_expected
     TEST_FAIL=$((TEST_FAIL+1))
+    echo "Diff result:"
     diff outfile outfile_expected
 fi
 
@@ -123,9 +128,38 @@ else
     echo "-------------------------------------"
     echo "TEST: here_doc multiple commands"
     echo "=> NG"
+    echo "outfile:"
+    cat outfile
+    echo "outfile_expected:"
+    cat outfile_expected
     TEST_FAIL=$((TEST_FAIL+1))
+    echo "Diff result:"
     diff outfile outfile_expected
 fi
+
+# テスト5: 環境変数PATHを使用するコマンド
+run_test \
+"./pipex infile \"which ls\" \"wc -l\" outfile" \
+"< infile which ls | wc -l > outfile_expected" \
+"Path resolution test: which ls|wc -l"
+
+# テスト6: 複数の引数を持つコマンド
+run_test \
+"./pipex infile \"grep -i HELLO\" \"sed 's/world/everyone/'\" outfile" \
+"< infile grep -i HELLO | sed 's/world/everyone/' > outfile_expected" \
+"Multiple arguments test: grep -i|sed substitution"
+
+# テスト7: 特殊文字を含むコマンド
+run_test \
+"./pipex infile \"tr ' ' '\t'\" \"tr '\t' ','\" outfile" \
+"< infile tr ' ' '\t' | tr '\t' ',' > outfile_expected" \
+"Special characters test: tr with tabs"
+
+# テスト8: 長いパイプチェーン
+run_test \
+"./pipex infile \"cat\" \"grep a\" \"tr a-z A-Z\" \"wc -w\" outfile" \
+"< infile cat | grep a | tr a-z A-Z | wc -w > outfile_expected" \
+"Long pipe chain test: cat|grep|tr|wc"
 
 ##########################
 # 結果まとめ

@@ -53,8 +53,7 @@ int			is_here_doc(char *arg);
 int			handle_here_doc(char *limiter);
 
 /* pipex.c */
-void		execute_pipeline(char **cmds, int cmd_count, int in_fd, int out_fd,
-				char **envp);
+void		execute_pipeline(t_pipex *px, char **envp);
 void		wait_children(void);
 
 #endif

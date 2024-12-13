@@ -1,4 +1,4 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   path.c                                             :+:      :+:    :+:   */
@@ -6,16 +6,22 @@
 /*   By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/13 09:06:08 by teando            #+#    #+#             */
-/*   Updated: 2024/12/13 11:06:26 by teando           ###   ########.fr       */
+/*   Updated: 2024/12/13 20:00:26 by teando           ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "pipex.h"
 
-static char	*join_path(const char *p, const char *cmd)
+/*
+ * パスとコマンド名を結合する補助関数
+ * @param p パス文字列
+ * @param cmd コマンド名
+ * @return 結合された完全なパス。メモリ確保に失敗した場合はNULL
+ */
+static char *join_path(const char *p, const char *cmd)
 {
-	char	*tmp;
-	char	*joined;
+	char *tmp;
+	char *joined;
 
 	tmp = ft_strjoin(p, "/");
 	if (!tmp)
@@ -25,10 +31,16 @@ static char	*join_path(const char *p, const char *cmd)
 	return (joined);
 }
 
-static char	*check_path(char **paths, char *cmd)
+/*
+ * 指定されたコマンドが実行可能なパスを探索する
+ * @param paths 検索対象のパスの配列
+ * @param cmd 検索するコマンド名
+ * @return コマンドの完全なパス。見つからない場合はNULL
+ */
+static char *check_path(char **paths, char *cmd)
 {
-	int		i;
-	char	*fullpath;
+	int i;
+	char *fullpath;
 
 	i = 0;
 	while (paths && paths[i])
@@ -44,31 +56,32 @@ static char	*check_path(char **paths, char *cmd)
 	return (NULL);
 }
 
-char	*get_cmd_path(char *cmd, char **envp)
+/*
+ * 環境変数PATHからコマンドの実行可能なフルパスを取得する
+ * @param cmd コマンド名
+ * @param envp 環境変数の配列
+ * @return コマンドの完全なパス。見つからない場合はNULL
+ */
+char *get_cmd_path(char *cmd, char **envp)
 {
-	int		i;
-	char	**paths;
-	char	*path_env;
-	char	*res;
+	char **paths;
+	char *res;
+	int i;
 
 	if (!cmd)
 		return (NULL);
 	if (ft_strchr(cmd, '/'))
-		return ((access(cmd, X_OK) == 0) ? ft_strdup(cmd) : NULL);
-	i = -1;
-	path_env = NULL;
-	while (envp && envp[++i])
 	{
-		if (ft_strncmp(envp[i], "PATH=", 5) == 0)
-		{
-			path_env = envp[i] + 5;
-			break ;
-		}
-	}
-	if (!path_env)
+		if (access(cmd, X_OK) == 0)
+			return (ft_strdup(cmd));
 		return (NULL);
-	paths = ft_split(path_env, ':');
+	}
+	i = 0;
+	while (envp && envp[i] && ft_strncmp(envp[i], "PATH=", 5))
+		i++;
+	if (!envp || !envp[i])
+		return (NULL);
+	paths = ft_split(envp[i] + 5, ':');
 	res = check_path(paths, cmd);
-	ft_free_split(paths);
-	return (res);
+	return (ft_free_split(paths), res);
 }
