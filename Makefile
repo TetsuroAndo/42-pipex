@@ -6,7 +6,7 @@
 #    By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/11 20:51:11 by teando            #+#    #+#              #
-#    Updated: 2024/12/13 08:42:41 by teando           ###   ########.fr        #
+#    Updated: 2024/12/13 09:29:23 by teando           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,7 +22,11 @@ IDFLAGS		:= -I$(INCS_DIR) -I$(LIBFT_DIR)
 
 SRCS 		:= \
 	$(addprefix src/, \
+		execute.c \
+		file_ctl.c \
+		path.c \
 		pipex.c \
+		utils.c \
 	)
 OBJS		:= $(addprefix $(OUT_DIR)/, $(SRCS:.c=.o))
 DEPS		:= $(OBJS:.o=.d)
