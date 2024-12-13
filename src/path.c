@@ -6,7 +6,7 @@
 /*   By: teando <teando@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/13 09:06:08 by teando            #+#    #+#             */
-/*   Updated: 2024/12/13 09:26:24 by teando           ###   ########.fr       */
+/*   Updated: 2024/12/13 11:06:26 by teando           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,11 +54,7 @@ char	*get_cmd_path(char *cmd, char **envp)
 	if (!cmd)
 		return (NULL);
 	if (ft_strchr(cmd, '/'))
-	{
-		if (access(cmd, X_OK) == 0)
-			return (ft_strdup(cmd));
-		return (NULL);
-	}
+		return ((access(cmd, X_OK) == 0) ? ft_strdup(cmd) : NULL);
 	i = -1;
 	path_env = NULL;
 	while (envp && envp[++i])
@@ -73,5 +69,6 @@ char	*get_cmd_path(char *cmd, char **envp)
 		return (NULL);
 	paths = ft_split(path_env, ':');
 	res = check_path(paths, cmd);
-	return (ft_free_split(paths), res);
+	ft_free_split(paths);
+	return (res);
 }
